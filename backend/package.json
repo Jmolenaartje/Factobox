@@ -11,15 +11,21 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@serialport/parser-readline": "^12.0.0",
+    "backend": "file:",
     "cors": "^2.8.5",
     "dotenv": "^16.4.6",
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "serialport": "^12.0.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.1",
+    "@types/serialport": "^8.0.5",
+    "@types/ws": "^8.5.13",
     "nodemon": "^3.1.7",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
