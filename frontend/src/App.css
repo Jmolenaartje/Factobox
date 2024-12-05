@@ -48,7 +48,7 @@ select {
 }
 
 .button {
-  background-color: #4CAF50; /* Green */
+  background-color: #4CAF50;
   color: white;
   padding: 10px 15px;
   margin-left: 10px;
@@ -59,7 +59,7 @@ select {
 }
 
 .button:hover {
-  background-color: #45a049; /* Darker green */
+  background-color: #45a049; 
 }
 
 .status-section p {
