@@ -27,19 +27,27 @@ const App: React.FC = () => {
 
     const controlFactory = async (command: "START" | "STOP") => {
         try {
+            // Check the current status before making the API call
             if (command === "START" && status === "Factory process started.") {
-                alert("Factory is already running.");
+                alert("Factory is already running."); // Show alert for already running factory
                 return;
             }
-
+    
             if (command === "STOP" && status === "Factory process stopped.") {
-                alert("Factory is already stopped.");
+                alert("Factory is already stopped."); // Show alert for already stopped factory
                 return;
             }
-
+    
+            // Make the API call to start or stop the factory
             const res = await axios.post("http://localhost:5000/command", { command });
             console.log(res.data);
-            setStatus(`Factory process ${command.toLowerCase()}.`);
+            
+            // Update the status based on the command
+            if (command === "START") {
+                setStatus("Factory process started.");
+            } else {
+                setStatus("Factory process stopped.");
+            }
         } catch (error) {
             console.error(`Error ${command.toLowerCase()}ing the factory:`, error);
             setStatus(`Error ${command.toLowerCase()}ing the factory.`);
