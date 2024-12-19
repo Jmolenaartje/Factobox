@@ -82,7 +82,7 @@ wss.on('connection', (ws: WebSocket) => {
           inventory[block3]--;
   
           // Send information to the Arduino about the blocks used.
-          const commandToArduino = `TOWER,${block1.charAt(0)},${block2.charAt(0)},${block3.charAt(0)}\n`; // Usar la primera letra para el comando
+          const commandToArduino = `TOWER,${block1.charAt(0)},${block2.charAt(0)},${block3.charAt(0)}\n`; //Use the first letter for the command
           /*serialPort.write(commandToArduino, (err) => {
             if (err) {
               console.error('Error sending command to Arduino:', err);

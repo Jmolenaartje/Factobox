@@ -11,7 +11,8 @@ const TowerConfig: React.FC<{
     setBlocks: React.Dispatch<React.SetStateAction<string[]>>;
     wsManagerRef: React.RefObject<{ sendMessage: (message: any) => void }>; // WebSocket manager reference
     inventory: Inventory;
-}> = ({ blocks, setBlocks, wsManagerRef, inventory }) => {
+    buildTower: (blocks: string[]) => Promise<void>; // Added buildTower prop
+}> = ({ blocks, setBlocks, wsManagerRef, inventory, buildTower }) => {
 
     const handleBlockChange = (index: number, newBlock: string) => {
         const newBlocks = [...blocks];
@@ -19,7 +20,7 @@ const TowerConfig: React.FC<{
         setBlocks(newBlocks);
     };
 
-    const handleBuildTower = () => {
+    const handleBuildTower = async () => {
         console.log('Inventory:', inventory);
 
         const blockCount: { [key: string]: number } = {}; // Object to count blocks needed
@@ -62,8 +63,11 @@ const TowerConfig: React.FC<{
 
         // If all blocks are available, proceed to build the tower
         console.log(blocks);
-        if (wsManagerRef.current) {
-            wsManagerRef.current.sendMessage({ action: 'buildTower', blocks });
+        try {
+            await buildTower(blocks); // Call the buildTower function
+        } catch (error) {
+            console.error("Error building tower:", error);
+            alert("There was an error building the tower.");
         }
     };
 

@@ -7,6 +7,7 @@ interface Inventory {
 }
 
 interface Tower {
+    id: number; //Unique id for each tower
     block1: string;
     block2: string;
     block3: string;
@@ -18,6 +19,7 @@ type InventoryKey = keyof Inventory;
 export const useTowerQueue = (wsManagerRef: React.RefObject<{ sendMessage: (message: any) => void } | null>, inventory: Inventory, setInventory: React.Dispatch<React.SetStateAction<Inventory>>) => {
     const [queue, setQueue] = useState<Tower[]>([]);
     const [isBuilding, setIsBuilding] = useState<boolean>(false);
+    let nextId = 0; // Counter for unique IDs
 
     const buildTower = async (blocks: string[]) => {
         if (isBuilding) {
@@ -27,19 +29,20 @@ export const useTowerQueue = (wsManagerRef: React.RefObject<{ sendMessage: (mess
 
         // Check if there are enough blocks in the inventory
         const blockCounts = blocks.reduce((acc, block) => {
-            acc[block as InventoryKey] = (acc[block as InventoryKey] || 0) + 1; // Use type assertion here
+            acc[block as InventoryKey] = (acc[block as InventoryKey] || 0) + 1;
             return acc;
         }, {} as Record<InventoryKey, number>);
 
-        for (const block of Object.keys(blockCounts) as InventoryKey[]) { // Cast to InventoryKey[]
+        for (const block of Object.keys(blockCounts) as InventoryKey[]) {
             if (inventory[block] < blockCounts[block]) {
                 alert(`Not enough ${block} blocks in inventory.`);
                 return;
             }
         }
 
-        // Create a new tower object
+        // Create a new tower object with a unique ID
         const newTower: Tower = {
+            id: nextId++, // Assign a unique ID
             block1: blocks[0],
             block2: blocks[1],
             block3: blocks[2],
@@ -55,14 +58,14 @@ export const useTowerQueue = (wsManagerRef: React.RefObject<{ sendMessage: (mess
         }
 
         // Simulate building process
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate a delay for building
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         // Update inventory after building
         const updatedInventory = { ...inventory };
         blocks.forEach(block => {
-            updatedInventory[block as InventoryKey] -= 1; // Use type assertion here
+            updatedInventory[block as InventoryKey] -= 1;
         });
-        setInventory(updatedInventory); // Update the inventory state
+        setInventory(updatedInventory);
 
         // Remove the tower from the queue
         setQueue(prevQueue => prevQueue.slice(1));

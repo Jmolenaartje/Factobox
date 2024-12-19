@@ -22,8 +22,8 @@ const App: React.FC = () => {
 
     const wsManagerRef = useRef<{ sendMessage: (message: any) => void } | null>(null);
 
-    const { queue } = useTowerQueue(wsManagerRef, inventory, setInventory);
-
+    // Use the custom hook to manage the tower queue
+    const { queue, buildTower } = useTowerQueue(wsManagerRef, inventory, setInventory);
 
     const controlFactory = async (command: "START" | "STOP") => {
         try {
@@ -50,7 +50,7 @@ const App: React.FC = () => {
         <div className="app-container">
             <h1>Block Tower Builder</h1>
             <InventoryDisplay inventory={inventory} />
-            <TowerConfig blocks={blocks} setBlocks={setBlocks} inventory={inventory} wsManagerRef={wsManagerRef} />
+            <TowerConfig blocks={blocks} setBlocks={setBlocks} inventory={inventory} wsManagerRef={wsManagerRef} buildTower={buildTower} />
             <StatusDisplay status={status} />
             <FactoryControl controlFactory={controlFactory} />
             <QueueDisplay queue={queue} /> {/* Render the queue display */}

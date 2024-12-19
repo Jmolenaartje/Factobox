@@ -1,7 +1,14 @@
 import React from 'react';
 
+interface Tower {
+    id: number;
+    block1: string;
+    block2: string;
+    block3: string;
+}
+
 interface QueueDisplayProps {
-    queue: { block1: string; block2: string; block3: string }[];
+    queue: Tower[];
 }
 
 const QueueDisplay: React.FC<QueueDisplayProps> = ({ queue }) => {
@@ -10,8 +17,8 @@ const QueueDisplay: React.FC<QueueDisplayProps> = ({ queue }) => {
             <h2>Queue</h2>
             <ul>
                 {queue.map((tower, index) => (
-                    <li key={index}>
-                        {tower.block1}, {tower.block2}, {tower.block3}
+                    <li key={tower.id}>
+                        {index + 1}. Block 1: {tower.block1}, Block 2: {tower.block2}, Block 3: {tower.block3}
                     </li>
                 ))}
             </ul>
