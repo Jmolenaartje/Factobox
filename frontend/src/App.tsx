@@ -22,7 +22,8 @@ const App: React.FC = () => {
 
     const wsManagerRef = useRef<{ sendMessage: (message: any) => void } | null>(null);
 
-    const { buildTower, queue } = useTowerQueue(wsManagerRef, inventory, setInventory); 
+    const { queue } = useTowerQueue(wsManagerRef, inventory, setInventory);
+
 
     const controlFactory = async (command: "START" | "STOP") => {
         try {
@@ -49,7 +50,7 @@ const App: React.FC = () => {
         <div className="app-container">
             <h1>Block Tower Builder</h1>
             <InventoryDisplay inventory={inventory} />
-            <TowerConfig blocks={blocks} setBlocks={setBlocks} buildTower={() => buildTower(blocks)} inventory={inventory} />
+            <TowerConfig blocks={blocks} setBlocks={setBlocks} inventory={inventory} wsManagerRef={wsManagerRef} />
             <StatusDisplay status={status} />
             <FactoryControl controlFactory={controlFactory} />
             <QueueDisplay queue={queue} /> {/* Render the queue display */}

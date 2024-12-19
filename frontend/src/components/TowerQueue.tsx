@@ -1,3 +1,4 @@
+// src/hooks/useTowerQueue.tsx
 import { useState, useEffect } from 'react';
 
 export const useTowerQueue = (wsManagerRef: React.RefObject<{ sendMessage: (message: any) => void }>) => {
@@ -20,7 +21,6 @@ export const useTowerQueue = (wsManagerRef: React.RefObject<{ sendMessage: (mess
 
             // Simulate the building process (this will be replaced by the robotic arm logic)
             setTimeout(() => {
-                // Here you would call a function to signal that the tower is built
                 completeTowerBuild(); // Simulate completion of the tower building
             }, 2000); // Simulate a delay for building the tower
         }

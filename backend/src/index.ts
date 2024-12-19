@@ -52,36 +52,65 @@ wss.on('connection', (ws: WebSocket) => {
   // Handle incoming messages from the client
   ws.on('message', (message: string) => {
     try {
+      console.log("INIT");
       const towerConfig = JSON.parse(message);
-      const { block1, block2, block3 } = towerConfig;
-
-      // Check if enough blocks are available
-      if (
-        inventory[block1] > 0 &&
-        inventory[block2] > 0 &&
-        inventory[block3] > 0
-      ) {
-        // Deduct blocks used
-        inventory[block1]--;
-        inventory[block2]--;
-        inventory[block3]--;
-
-        // Notify all clients about updated inventory
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(inventory));
-          }
-        });
-
-        console.log('Tower being constructed:', towerConfig);
+      
+      // Make sure the action is correct
+      if (towerConfig.action === "buildTower") {
+        serialPort.write("INIT");
+        const blocks = towerConfig.blocks; // Access the block array
+        console.log('Blocks:', blocks); // Log of the blocks
+  
+        // Verifies that the array has at least 3 blocks
+        if (blocks.length < 3) {
+          console.log('Not enough blocks provided');
+          return; // Exit if there are not enough blocks
+        }
+  
+        // Assign blocks to block 1-2-3
+        const [block1, block2, block3] = blocks;
+  
+        // Check if enough blocks are available
+        if (
+          inventory[block1] > 0 &&
+          inventory[block2] > 0 &&
+          inventory[block3] > 0
+        ) {
+          // Deduct blocks used
+          inventory[block1]--;
+          inventory[block2]--;
+          inventory[block3]--;
+  
+          // Send information to the Arduino about the blocks used.
+          const commandToArduino = `TOWER,${block1.charAt(0)},${block2.charAt(0)},${block3.charAt(0)}\n`; // Usar la primera letra para el comando
+          /*serialPort.write(commandToArduino, (err) => {
+            if (err) {
+              console.error('Error sending command to Arduino:', err);
+            } else {
+              console.log('Command sent to Arduino:', commandToArduino);
+            }
+          });*/
+  
+          // Notify all clients about updated inventory
+          wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(inventory));
+            }
+          });
+  
+          console.log('Tower being constructed:', towerConfig);
+        } else {
+          console.log('Insufficient blocks to construct the tower');
+        }
       } else {
-        console.log('Insufficient blocks to construct the tower');
+        console.log('Invalid action in message');
       }
     } catch (error) {
       console.error('Error processing client message:', error);
     }
   });
 });
+
 
 // Read Data from Serial Port (Arduino)
 parser.on('data', (data: string) => {
