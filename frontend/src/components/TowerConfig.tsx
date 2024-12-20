@@ -1,7 +1,6 @@
 import React from 'react';
 import BlockSelector from './BlockSelector';
 
-// Define the Inventory type
 type Inventory = {
     [key: string]: number; // This allows for any string key with a number value
 };
@@ -65,6 +64,11 @@ const TowerConfig: React.FC<{
         console.log(blocks);
         try {
             await buildTower(blocks); // Call the buildTower function
+
+            // Optionally, send a message to the WebSocket server
+            if (wsManagerRef.current) {
+                wsManagerRef.current.sendMessage({ action: 'buildTower', blocks });
+            }
         } catch (error) {
             console.error("Error building tower:", error);
             alert("There was an error building the tower.");

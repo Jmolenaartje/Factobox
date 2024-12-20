@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 
 interface Inventory {
     Red: number;

@@ -38,10 +38,12 @@ const App: React.FC = () => {
                 return;
             }
     
+            console.log(`Sending command: ${command}`); // Log the command being sent
+    
             // Make the API call to start or stop the factory
             const res = await axios.post("http://localhost:5000/command", { command });
-            console.log(res.data);
-            
+            console.log('Response from server:', res.data); // Log the response from the server
+    
             // Update the status based on the command
             if (command === "START") {
                 setStatus("Factory process started.");
@@ -49,8 +51,17 @@ const App: React.FC = () => {
                 setStatus("Factory process stopped.");
             }
         } catch (error) {
-            console.error(`Error ${command.toLowerCase()}ing the factory:`, error);
-            setStatus(`Error ${command.toLowerCase()}ing the factory.`);
+            // Check if the error is an Axios error
+            if (axios.isAxiosError(error) && error.response) {
+                // Handle the error response from the server
+                console.error(`Error ${command.toLowerCase()}ing the factory:`, error.response.data);
+                alert(error.response.data.error); // Show the error message from the server
+                setStatus(`Error ${command.toLowerCase()}ing the factory: ${error.response.data.error}`);
+            } else {
+                // Handle other types of errors
+                console.error(`Error ${command.toLowerCase()}ing the factory:`, error);
+                setStatus(`Error ${command.toLowerCase()}ing the factory.`);
+            }
         }
     };
 
