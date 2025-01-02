@@ -1,11 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 import InventoryDisplay from './components/InventoryDisplay';
 import TowerConfig from './components/TowerConfig';
 import StatusDisplay from './components/StatusDisplay';
 import FactoryControl from './components/FactoryControl';
-import QueueDisplay, { Tower } from './components/QueueDisplay'; // Import Tower interface
+import QueueDisplay from './components/QueueDisplay';
 import WebSocketManager from './components/WebSocketManager';
 import { useTowerQueue } from './hooks/useTowerQueue';
 
@@ -16,23 +16,34 @@ type Inventory = {
 };
 
 const App: React.FC = () => {
-  const [inventory, setInventory] = useState<Inventory>({ Red: 0, Green: 0, Blue: 0 });
+  // Load initial state from localStorage or use defaults
+  const [inventory, setInventory] = useState<Inventory>(() => {
+    const savedInventory = localStorage.getItem('inventory');
+    return savedInventory ? JSON.parse(savedInventory) : { Red: 3, Green: 3, Blue: 3 };
+  });
+
   const [blocks, setBlocks] = useState<string[]>(['Red', 'Green', 'Blue']);
   const [status, setStatus] = useState<string>('Waiting for tower configuration.');
-  const [queue, setQueue] = useState<Tower[]>([]);
+  const [isFactoryRunning, setIsFactoryRunning] = useState<boolean>(false); // Track factory state
 
   const wsManagerRef = useRef<{ sendMessage: (message: any) => void } | null>(null);
 
+  // Save inventory to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('inventory', JSON.stringify(inventory));
+  }, [inventory]);
+
   // Use the custom hook to manage the tower queue
-  const { buildTower } = useTowerQueue(wsManagerRef, inventory, setInventory);
+  const { queue, buildTower } = useTowerQueue(wsManagerRef, inventory, setInventory, isFactoryRunning);
 
   const controlFactory = async (command: "START" | "STOP") => {
     try {
       const res = await axios.post("http://localhost:5000/command", { command: command.toLowerCase() }, {
-        withCredentials: true, // Send credentials (e.g., cookies) with the request
+        withCredentials: true,
       });
       console.log(res.data);
       setStatus(`Factory process ${command.toLowerCase()}ed.`);
+      setIsFactoryRunning(command === "START"); // Update factory state
     } catch (error) {
       console.error(`Error ${command.toLowerCase()}ing the factory:`, error);
       setStatus(`Error ${command.toLowerCase()}ing the factory.`);
@@ -40,22 +51,14 @@ const App: React.FC = () => {
   };
 
   const handleBuildTower = async (blocks: string[]) => {
-    const newTower: Tower = {
-      id: queue.length,
-      block1: blocks[0],
-      block2: blocks[1],
-      block3: blocks[2],
-    };
-
-    setQueue((prevQueue) => [...prevQueue, newTower]);
-    buildTower(blocks);
+    await buildTower(blocks);
   };
 
   return (
     <div className="app-container">
       <h1>Block Tower Builder</h1>
       <InventoryDisplay inventory={inventory} />
-      <TowerConfig blocks={blocks} setBlocks={setBlocks} inventory={inventory} wsManagerRef={wsManagerRef} buildTower={handleBuildTower} />
+      <TowerConfig blocks={blocks} setBlocks={setBlocks} buildTower={handleBuildTower} />
       <StatusDisplay status={status} />
       <FactoryControl controlFactory={controlFactory} />
       <QueueDisplay queue={queue} />
