@@ -1,16 +1,21 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-
 import { WebSocketServer, WebSocket } from 'ws';
 import { SerialPort } from 'serialport';
 import { ReadlineParser } from '@serialport/parser-readline';
-import { setTimeout } from 'timers/promises';
 
 // Express server setup
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// Enable CORS
+app.use(cors({
+  origin: 'http://localhost:3000', // Allow requests from your frontend server
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific HTTP methods
+  credentials: true, // Allow credentials (e.g., cookies) to be sent with requests
+}));
+
+app.use(express.json()); // Parse JSON request bodies
 
 // Load environment variables
 dotenv.config();
@@ -60,16 +65,22 @@ wss.on('connection', (ws: WebSocket) => {
         serialPort.write("INIT");
         const blocks = towerConfig.blocks; // Access the block array
         console.log('Blocks:', blocks); // Log of the blocks
-  
+
+        // Check if blocks is defined and is an array
+        if (!blocks || !Array.isArray(blocks)) {
+          console.log('Invalid message format');
+          return; // Exit if the message format is invalid
+        }
+
         // Verifies that the array has at least 3 blocks
         if (blocks.length < 3) {
           console.log('Not enough blocks provided');
           return; // Exit if there are not enough blocks
         }
-  
+
         // Assign blocks to block 1-2-3
         const [block1, block2, block3] = blocks;
-  
+
         // Check if enough blocks are available
         if (
           inventory[block1] > 0 &&
@@ -80,24 +91,18 @@ wss.on('connection', (ws: WebSocket) => {
           inventory[block1]--;
           inventory[block2]--;
           inventory[block3]--;
-  
+
           // Send information to the Arduino about the blocks used.
-          const commandToArduino = `TOWER,${block1.charAt(0)},${block2.charAt(0)},${block3.charAt(0)}\n`; //Use the first letter for the command
-          /*serialPort.write(commandToArduino, (err) => {
-            if (err) {
-              console.error('Error sending command to Arduino:', err);
-            } else {
-              console.log('Command sent to Arduino:', commandToArduino);
-            }
-          });*/
-  
+          const commandToArduino = `TOWER,${block1.charAt(0)},${block2.charAt(0)},${block3.charAt(0)}\n`;
+          serialPort.write(commandToArduino);
+
           // Notify all clients about updated inventory
           wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify(inventory));
             }
           });
-  
+
           console.log('Tower being constructed:', towerConfig);
         } else {
           console.log('Insufficient blocks to construct the tower');
@@ -110,7 +115,6 @@ wss.on('connection', (ws: WebSocket) => {
     }
   });
 });
-
 
 // Read Data from Serial Port (Arduino)
 parser.on('data', (data: string) => {
@@ -143,61 +147,37 @@ parser.on('data', (data: string) => {
 app.post('/command', (req, res) => {
   const { command } = req.body;
 
-  try {
-    switch (command) {
-      case 'START':
-        // Send start command to Arduino
-        serialPort.write('START\n', (err) => {
-          if (err) {
-            console.error('Error sending START command:', err);
-            return res.status(500).json({ error: 'Failed to send START command' });
-          }
-          isFactoryRunning = true;
-          res.json({ message: 'Factory process started', status: isFactoryRunning });
-        });
-        break;
-
-      case 'STOP':
-        // Send stop command to Arduino
-        serialPort.write('STOP\n', (err) => {
-          if (err) {
-            console.error('Error sending STOP command:', err);
-            return res.status(500).json({ error: 'Failed to send STOP command' });
-          }
-          isFactoryRunning = false;
-          res.json({ message: 'Factory process stopped', status: isFactoryRunning });
-        });
-        break;
-
-      default:
-        res.status(400).json({ error: 'Invalid command' });
-    }
-  } catch (error) {
-    console.error('Error processing command:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (command === 'start') {
+    isFactoryRunning = true;
+    // Send signal to Arduino board to start factory
+    serialPort.write('START_FACTORY\n', (err) => {
+      if (err) {
+        console.error('Error sending signal to Arduino board:', err);
+        res.status(500).json({ error: 'Error sending signal to Arduino board' });
+      } else {
+        console.log('Signal sent to Arduino board to start factory');
+        res.status(200).json({ message: 'Factory started', status: isFactoryRunning });
+      }
+    });
+  } else if (command === 'stop') {
+    isFactoryRunning = false;
+    // Send signal to Arduino board to stop factory
+    serialPort.write('STOP_FACTORY\n', (err) => {
+      if (err) {
+        console.error('Error sending signal to Arduino board:', err);
+        res.status(500).json({ error: 'Error sending signal to Arduino board' });
+      } else {
+        console.log('Signal sent to Arduino board to stop factory');
+        res.status(200).json({ message: 'Factory stopped', status: isFactoryRunning });
+      }
+    });
+  } else {
+    res.status(400).json({ error: 'Invalid command' });
+    console.log('Received invalid command:', command);
   }
 });
-
-// Handle Serial Port Errors
-serialPort.on('error', (error) => {
-  console.error('Serial Port Error:', error);
-});
-
-// Express API endpoint
-app.get('/api', (req, res) => {
-  res.send('Hello from the backend!');
-});
-
-// Status endpoint to check factory state
-app.get('/status', (req, res) => {
-  res.json({ 
-    isFactoryRunning, 
-    inventory 
-  });
-});
-
 // Start the Express server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
