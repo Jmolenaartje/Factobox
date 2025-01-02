@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 interface Inventory {
   Red: number;
@@ -20,11 +20,21 @@ export const useTowerQueue = (
   wsManagerRef: React.RefObject<{ sendMessage: (message: any) => void } | null>,
   inventory: Inventory,
   setInventory: React.Dispatch<React.SetStateAction<Inventory>>,
-  isFactoryRunning: boolean // Add factory state as a parameter
+  isFactoryRunning: boolean,
+  queue: Tower[], // Use the queue passed from App.tsx
+  setQueue: React.Dispatch<React.SetStateAction<Tower[]>> // Use the setQueue passed from App.tsx
 ) => {
-  const [queue, setQueue] = useState<Tower[]>([]);
   const [isBuilding, setIsBuilding] = useState<boolean>(false);
-  const nextId = useRef(1); // Initialize nextId to 1
+
+  // Initialize nextId from localStorage or start from 1
+  const nextId = useRef<number>(
+    parseInt(localStorage.getItem('nextId') || '1', 10)
+  );
+
+  // Save nextId to localStorage whenever the queue changes
+  useEffect(() => {
+    localStorage.setItem('nextId', nextId.current.toString());
+  }, [queue]);
 
   const processQueue = async () => {
     if (!isFactoryRunning || isBuilding || queue.length === 0) return; // Pause if factory is stopped
@@ -65,7 +75,7 @@ export const useTowerQueue = (
 
     // Create a new tower object with a unique ID
     const newTower: Tower = {
-      id: nextId.current++, // Assign a unique ID starting from 1
+      id: nextId.current++, // Assign a unique ID starting from the persisted value
       block1: blocks[0],
       block2: blocks[1],
       block3: blocks[2],
