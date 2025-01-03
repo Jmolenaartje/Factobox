@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { WebSocketServer, WebSocket } from 'ws';
 import { SerialPort } from 'serialport';
 import { ReadlineParser } from '@serialport/parser-readline';
+import { Console } from 'console';
 
 // Express server setup
 const app = express();
@@ -150,7 +151,7 @@ app.post('/command', (req, res) => {
   if (command === 'start') {
     isFactoryRunning = true;
     // Send signal to Arduino board to start factory
-    serialPort.write('START_FACTORY\n', (err) => {
+    serialPort.write('START\n', (err) => {
       if (err) {
         console.error('Error sending signal to Arduino board:', err);
         res.status(500).json({ error: 'Error sending signal to Arduino board' });
@@ -162,7 +163,7 @@ app.post('/command', (req, res) => {
   } else if (command === 'stop') {
     isFactoryRunning = false;
     // Send signal to Arduino board to stop factory
-    serialPort.write('STOP_FACTORY\n', (err) => {
+    serialPort.write('STOP\n', (err) => {
       if (err) {
         console.error('Error sending signal to Arduino board:', err);
         res.status(500).json({ error: 'Error sending signal to Arduino board' });
