@@ -73,6 +73,10 @@ const App: React.FC = () => {
   const controlFactory = async (command: "START" | "STOP") => {
     try {
       if (command === "STOP") {
+        if (!isFactoryRunning) {
+          console.log('Factory is already stopped');
+          return;
+        }
         setIsFactoryRunning(false);
         const res = await axios.post("http://localhost:5000/stop-factory", {}, {
           withCredentials: true,
@@ -80,6 +84,10 @@ const App: React.FC = () => {
         console.log(res.data);
         setStatus("Factory process stopped.");
       } else {
+        if (isFactoryRunning) {
+          console.log('Factory is already running');
+          return;
+        }
         setIsFactoryRunning(true);
         const res = await axios.post("http://localhost:5000/start-factory", {}, {
           withCredentials: true,

@@ -76,12 +76,15 @@ db.all('SELECT * FROM orders WHERE built = 0;', (err, rows) => {
   } else {
     rows.forEach((row: unknown) => {
       const rowObject = row as { [key: string]: string };
-      towerQueue.push({
-        id: parseInt(rowObject.id),
-        block1: rowObject.block1,
-        block2: rowObject.block2,
-        block3: rowObject.block3,
-      });
+      const existingOrder = towerQueue.find((order) => order.id === parseInt(rowObject.id));
+      if (!existingOrder) {
+        towerQueue.push({
+          id: parseInt(rowObject.id),
+          block1: rowObject.block1,
+          block2: rowObject.block2,
+          block3: rowObject.block3,
+        });
+      }
     });
     console.log('Initial queue loaded from database:', towerQueue);
   }
@@ -127,17 +130,20 @@ const processQueue = async () => {
     });
     console.log('Tower being constructed:', nextTower);
 
-    // Update the order as built
-    db.run('UPDATE orders SET built = 1 WHERE id = ?', [nextTower.id], (err) => {
-      if (err) {
-        console.error('Error updating order:', err);
-      } else {
-        console.log('Order updated as built');
-      }
-    });
+// Update the order as built
+db.run('UPDATE orders SET built = 1 WHERE id = ?', [nextTower.id], (err) => {
+  if (err) {
+    console.error('Error updating order:', err);
+  } else {
+    console.log('Order updated as built');
+  }
+});
 
-    // Remove the tower from the queue
-    towerQueue.shift();
+// Remove the tower from the queue
+const existingTowerIndex = towerQueue.findIndex((tower) => tower.id === nextTower.id);
+if (existingTowerIndex !== -1) {
+  towerQueue.splice(existingTowerIndex, 1);
+}
 
     // Process the next tower in the queue
     processQueue();

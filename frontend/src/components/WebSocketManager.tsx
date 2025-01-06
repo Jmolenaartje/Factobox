@@ -9,10 +9,14 @@ interface Inventory {
 const WebSocketManager = forwardRef<{ sendMessage: (message: any) => void }, { setInventory: (inventory: Inventory) => void; setStatus: (status: string) => void; }>(({ setInventory, setStatus }, ref) => {
   const socketRef = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
-
   const connectWebSocket = useCallback(() => {
+    if (socketRef.current) {
+      console.log('WebSocket connection already established');
+      return;
+    }
+  
     const socket = new WebSocket('ws://localhost:8080');
-
+  
     socket.onopen = () => {
       console.log('WebSocket connection established');
       setIsConnected(true);

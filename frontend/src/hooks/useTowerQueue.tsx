@@ -93,7 +93,7 @@ export const useTowerQueue = (
       alert("Invalid tower configuration. Please select exactly 3 blocks.");
       return;
     }
-
+  
     // Create a new tower object
     const newTower: Tower = {
       id: Date.now(), // Use timestamp as a unique ID
@@ -101,15 +101,22 @@ export const useTowerQueue = (
       block2: blocks[1],
       block3: blocks[2],
     };
-
+  
+    // Check if the tower already exists in the queue
+    const existingTower = queue.find((tower) => tower.id === newTower.id);
+    if (existingTower) {
+      console.log('Tower already exists in the queue');
+      return;
+    }
+  
     // Update the queue
     setQueueState((prevQueue) => [...prevQueue, newTower]);
-
+  
     // Start processing the queue if not already building
     if (!isBuilding && isFactoryRunning) {
       processQueue();
     }
-
+  
     // Send a message to the WebSocket server
     if (wsManagerRef.current) {
       wsManagerRef.current.sendMessage({ action: 'buildTower', blocks: [newTower.block1, newTower.block2, newTower.block3] });
