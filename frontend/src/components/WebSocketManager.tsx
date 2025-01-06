@@ -10,9 +10,8 @@ const WebSocketManager = forwardRef<{ sendMessage: (message: any) => void }, { s
   const socketRef = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
-  // Wrap connectWebSocket in useCallback
   const connectWebSocket = useCallback(() => {
-    const socket = new WebSocket('ws://localhost:8080'); // Correct WebSocket URL
+    const socket = new WebSocket('ws://localhost:8080');
 
     socket.onopen = () => {
       console.log('WebSocket connection established');
@@ -34,7 +33,7 @@ const WebSocketManager = forwardRef<{ sendMessage: (message: any) => void }, { s
       console.log('WebSocket connection closed');
       setIsConnected(false);
       setStatus('WebSocket connection closed. Attempting to reconnect...');
-      setTimeout(connectWebSocket, 3000); // Reconnect attempt after 3s
+      setTimeout(connectWebSocket, 3000);
     };
 
     socket.onerror = (error) => {
@@ -46,9 +45,8 @@ const WebSocketManager = forwardRef<{ sendMessage: (message: any) => void }, { s
   }, [setInventory, setStatus]);
 
   useEffect(() => {
-    connectWebSocket(); // Establish WebSocket connection on mount
+    connectWebSocket();
 
-    // Close WebSocket connection when component unmounts
     return () => {
       if (socketRef.current) {
         socketRef.current.close();
@@ -56,7 +54,6 @@ const WebSocketManager = forwardRef<{ sendMessage: (message: any) => void }, { s
     };
   }, [connectWebSocket]);
 
-  // Function to send messages through the WebSocket
   const sendMessage = (message: any) => {
     if (socketRef.current && isConnected) {
       socketRef.current.send(JSON.stringify(message));
@@ -70,7 +67,7 @@ const WebSocketManager = forwardRef<{ sendMessage: (message: any) => void }, { s
     sendMessage,
   }));
 
-  return null; // This component does not render anything
+  return null;
 });
 
 export default WebSocketManager;

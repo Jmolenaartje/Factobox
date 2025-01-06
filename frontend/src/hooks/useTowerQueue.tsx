@@ -1,6 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 interface Inventory {
+  [key: string]: number;
   Red: number;
   Green: number;
   Blue: number;
@@ -13,57 +15,76 @@ interface Tower {
   block3: string;
 }
 
-// Define a union type for the keys of Inventory
-type InventoryKey = keyof Inventory;
-
 export const useTowerQueue = (
   wsManagerRef: React.RefObject<{ sendMessage: (message: any) => void } | null>,
   inventory: Inventory,
   setInventory: React.Dispatch<React.SetStateAction<Inventory>>,
   isFactoryRunning: boolean,
-  queue: Tower[], // Use the queue passed from App.tsx
-  setQueue: React.Dispatch<React.SetStateAction<Tower[]>> // Use the setQueue passed from App.tsx
+  setQueue: React.Dispatch<React.SetStateAction<Tower[]>>
 ) => {
-  const [isBuilding, setIsBuilding] = useState<boolean>(false);
+  const [queue, setQueueState] = useState<Tower[]>([]);
+  const [isBuilding, setIsBuilding] = useState(false);
 
-  // Initialize nextId from localStorage or start from 1
-  const nextId = useRef<number>(
-    parseInt(localStorage.getItem('nextId') || '1', 10)
-  );
-
-  // Save nextId to localStorage whenever the queue changes
+  // Load initial queue from the backend
   useEffect(() => {
-    localStorage.setItem('nextId', nextId.current.toString());
+    axios.get('http://localhost:5000/queue')
+      .then((response) => {
+        setQueueState(response.data);
+      })
+      .catch((error) => {
+        console.error('Error fetching queue:', error);
+      });
+  }, []);
+
+  // Save queue to the backend whenever it changes
+  useEffect(() => {
+    axios.post('http://localhost:5000/queue', { queue })
+      .catch((error) => {
+        console.error('Error saving queue:', error);
+      });
   }, [queue]);
 
   const processQueue = async () => {
-    if (!isFactoryRunning || isBuilding || queue.length === 0) return; // Pause if factory is stopped
+    if (!isFactoryRunning || queue.length === 0) return; // Pause if factory is stopped
 
-    setIsBuilding(true);
     const nextTower = queue[0]; // Get the first tower in the queue
-
-    // Send a message to the WebSocket server
-    if (wsManagerRef.current) {
-      wsManagerRef.current.sendMessage({ action: 'buildTower', tower: nextTower });
-    }
-
-    // Simulate building process
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    // Update inventory after building
-    const updatedInventory = { ...inventory };
     const blocks = [nextTower.block1, nextTower.block2, nextTower.block3];
-    blocks.forEach((block) => {
-      updatedInventory[block as InventoryKey] -= 1;
-    });
-    setInventory(updatedInventory);
 
-    // Remove the tower from the queue
-    setQueue((prevQueue) => prevQueue.slice(1));
-    setIsBuilding(false);
+    // Check if there are enough blocks
+    if (
+      inventory[nextTower.block1] >= 1 &&
+      inventory[nextTower.block2] >= 1 &&
+      inventory[nextTower.block3] >= 1
+    ) {
+      setIsBuilding(true);
 
-    // Process the next tower in the queue
-    processQueue();
+      // Send a message to the WebSocket server
+      if (wsManagerRef.current) {
+        wsManagerRef.current.sendMessage({ action: 'buildTower', blocks: [nextTower.block1, nextTower.block2, nextTower.block3] });
+      }
+
+      // Simulate building process
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      // Update inventory after building
+      const updatedInventory = { ...inventory };
+      blocks.forEach((block) => {
+        updatedInventory[block] -= 1;
+      });
+      setInventory(updatedInventory);
+
+      // Remove the tower from the queue
+      setQueueState((prevQueue) => prevQueue.slice(1));
+      setIsBuilding(false);
+
+      // Process the next tower in the queue
+      processQueue();
+    } else {
+      // Wait until there are enough blocks
+      setTimeout(() => {
+        processQueue();
+      }, 1000); // Check every 1 second
+    }
   };
 
   const buildTower = async (blocks: string[]) => {
@@ -73,20 +94,25 @@ export const useTowerQueue = (
       return;
     }
 
-    // Create a new tower object with a unique ID
+    // Create a new tower object
     const newTower: Tower = {
-      id: nextId.current++, // Assign a unique ID starting from the persisted value
+      id: Date.now(), // Use timestamp as a unique ID
       block1: blocks[0],
       block2: blocks[1],
       block3: blocks[2],
     };
 
     // Update the queue
-    setQueue((prevQueue) => [...prevQueue, newTower]);
+    setQueueState((prevQueue) => [...prevQueue, newTower]);
 
     // Start processing the queue if not already building
     if (!isBuilding && isFactoryRunning) {
       processQueue();
+    }
+
+    // Send a message to the WebSocket server
+    if (wsManagerRef.current) {
+      wsManagerRef.current.sendMessage({ action: 'buildTower', blocks: [newTower.block1, newTower.block2, newTower.block3] });
     }
   };
 
