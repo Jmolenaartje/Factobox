@@ -9,6 +9,16 @@ import sqlite3 from 'sqlite3';
 // Initialize SQLite Database
 const db = new sqlite3.Database('./orders.db');
 
+// // Reset the database
+// db.serialize(() => {
+//   db.run('DELETE FROM orders;');
+//   db.run('DELETE FROM inventory;');
+//   db.run('INSERT INTO inventory (color, quantity) VALUES (?, ?)', ['Red', 5]);
+//   db.run('INSERT INTO inventory (color, quantity) VALUES (?, ?)', ['Green', 5]);
+//   db.run('INSERT INTO inventory (color, quantity) VALUES (?, ?)', ['Blue', 5]);
+//   db.run('UPDATE sqlite_sequence SET seq = 1 WHERE name = \'orders\';');
+// });
+
 // Create a table to store orders if it doesn't exist
 db.serialize(() => {
   // cSpell:disable
