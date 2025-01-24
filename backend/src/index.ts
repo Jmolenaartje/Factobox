@@ -123,6 +123,9 @@ const processQueue = async () => {
     inventory[nextTower.block2]--;
     inventory[nextTower.block3]--;
 
+import { setupWebSocket } from './websocket'; // Import the WebSocket setup function
+
+
     // Update inventory in the database
     updateInventory(nextTower.block1, inventory[nextTower.block1]);
     updateInventory(nextTower.block2, inventory[nextTower.block2]);
@@ -413,6 +416,16 @@ app.post('/stop-factory', (req, res) => {
       return res.status(200).json({ message: 'Factory stopped' });
     }
   });
+});
+
+// Setup WebSocket server
+setupWebSocket(app); // Pass the Express app to the WebSocket setup
+
+// Express API endpoint
+app.get('/api', (req, res) => {
+  console.log('Received a request to /api'); // Log the request
+  console.log('Query parameters:', req.query); // Example of using req to access query parameters
+  res.send('Hello from the backend!');
 });
 
 // Start the Express server
