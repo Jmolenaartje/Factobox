@@ -242,12 +242,14 @@ wss.on('connection', (ws: WebSocket) => {
   ws.on('message', (message: string) => {
     try {
       const towerConfig = JSON.parse(message);
-      
+
       // Ensure the action is correct
       if (towerConfig.action === "buildTower") {
+        // Send INIT command to Arduino
         serialPort.write("INIT");
-        serialPort.write("START");
-        const blocks = towerConfig.blocks; // Access the block array
+
+        // Access the block array
+        const blocks = towerConfig.blocks;
 
         // Validate blocks
         if (!blocks || !Array.isArray(blocks) || blocks.length < 3) {
@@ -267,13 +269,17 @@ wss.on('connection', (ws: WebSocket) => {
         });
 
         // Save the order to the database
-        db.run('INSERT INTO orders (block1, block2, block3, built) VALUES (?, ?, ?, ?)', [block1, block2, block3, 0], function(err) {
-          if (err) {
-            console.error('Error saving order to database:', err);
-          } else {
-            console.log(`Order saved to database with ID: ${this.lastID}`);
+        db.run(
+          'INSERT INTO orders (block1, block2, block3, built) VALUES (?, ?, ?, ?)',
+          [block1, block2, block3, 0],
+          function (err) {
+            if (err) {
+              console.error('Error saving order to database:', err);
+            } else {
+              console.log(`Order saved to database with ID: ${this.lastID}`);
+            }
           }
-        });
+        );
 
         // Send the update message to all clients
         wss.clients.forEach((client) => {

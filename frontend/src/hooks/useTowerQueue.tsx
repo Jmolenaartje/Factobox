@@ -15,8 +15,13 @@ interface Tower {
   block3: string;
 }
 
+interface WebSocketManager {
+  sendMessage: (message: any) => void;
+  isConnected: boolean;
+}
+
 export const useTowerQueue = (
-  wsManagerRef: React.RefObject<{ sendMessage: (message: any) => void } | null>,
+  wsManagerRef: React.RefObject<WebSocketManager | null>,
   inventory: Inventory,
   setInventory: React.Dispatch<React.SetStateAction<Inventory>>,
   isFactoryRunning: boolean,
@@ -45,17 +50,13 @@ export const useTowerQueue = (
   }, [queue]);
 
   const processQueue = async () => {
-    if (!isFactoryRunning || queue.length === 0) return; // Pause if factory is stopped
+    if (!isFactoryRunning || queue.length === 0) return; // Pause if factory is stopped or queue is empty
 
     const nextTower = queue[0]; // Get the first tower in the queue
     const blocks = [nextTower.block1, nextTower.block2, nextTower.block3];
 
     // Check if there are enough blocks
-    if (
-      inventory[nextTower.block1] >= 1 &&
-      inventory[nextTower.block2] >= 1 &&
-      inventory[nextTower.block3] >= 1
-    ) {
+    if (inventory[nextTower.block1] > 0 && inventory[nextTower.block2] > 0 && inventory[nextTower.block3] > 0) {
       setIsBuilding(true);
 
       // Send a message to the WebSocket server
@@ -64,12 +65,12 @@ export const useTowerQueue = (
       }
 
       // Simulate building process
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise<void>((resolve) => setTimeout(resolve, 3000));
 
       // Update inventory after building
       const updatedInventory = { ...inventory };
       blocks.forEach((block) => {
-        updatedInventory[block] -= 1;
+        updatedInventory[block]--;
       });
       setInventory(updatedInventory);
 
@@ -80,6 +81,7 @@ export const useTowerQueue = (
       // Process the next tower in the queue
       processQueue();
     } else {
+      console.log('Insufficient blocks to construct the tower');
       // Wait until there are enough blocks
       setTimeout(() => {
         processQueue();
@@ -93,7 +95,7 @@ export const useTowerQueue = (
       alert("Invalid tower configuration. Please select exactly 3 blocks.");
       return;
     }
-  
+
     // Create a new tower object
     const newTower: Tower = {
       id: Date.now(), // Use timestamp as a unique ID
@@ -101,25 +103,35 @@ export const useTowerQueue = (
       block2: blocks[1],
       block3: blocks[2],
     };
-  
+
     // Check if the tower already exists in the queue
     const existingTower = queue.find((tower) => tower.id === newTower.id);
     if (existingTower) {
       console.log('Tower already exists in the queue');
       return;
     }
-  
+
     // Update the queue
     setQueueState((prevQueue) => [...prevQueue, newTower]);
-  
+
+    // Wait for the WebSocket connection to be established
+    await new Promise<void>((resolve) => {
+      const intervalId = setInterval(() => {
+        if (wsManagerRef.current && wsManagerRef.current.isConnected) {
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, 100);
+    });
+
+    // Send the message to the WebSocket server
+    if (wsManagerRef.current) {
+      wsManagerRef.current.sendMessage({ action: 'buildTower', blocks: [newTower.block1, newTower.block2, newTower.block3] });
+    }
+
     // Start processing the queue if not already building
     if (!isBuilding && isFactoryRunning) {
       processQueue();
-    }
-  
-    // Send a message to the WebSocket server
-    if (wsManagerRef.current) {
-      wsManagerRef.current.sendMessage({ action: 'buildTower', blocks: [newTower.block1, newTower.block2, newTower.block3] });
     }
   };
 
